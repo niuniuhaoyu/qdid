@@ -73,4 +73,82 @@ void _qdid_run(string scalar yvars, string scalar treatname, string scalar probs
     }
     st_matrix("qttmat", out)
 }
+
+// weighted quantile of a weighted distribution (values vals, weights w) at probs p
+real colvector _qdid_wquantile(real colvector vals, real colvector w, real colvector p)
+{
+    real scalar n, i, j, cw
+    real matrix M
+    real colvector out, vs, ws, cdf
+    n = rows(vals)
+    M = sort((vals, w), 1)
+    vs = M[.,1]; ws = M[.,2]
+    cdf = J(n, 1, 0)
+    cw = 0
+    for (j = 1; j <= n; j++) {
+        cw = cw + ws[j]
+        cdf[j] = cw
+    }
+    cdf = cdf / cw
+    out = J(rows(p), 1, 0)
+    for (i = 1; i <= rows(p); i++) {
+        out[i] = vs[n]
+        for (j = 1; j <= n; j++) {
+            if (cdf[j] >= p[i]) {
+                out[i] = vs[j]
+                break
+            }
+        }
+    }
+    return(out)
+}
+
+// core with covariates (R qte::compute.panel.qtet, method="pscore", x != NULL)
+// C is drawn from the IPW-weighted untreated post-change distribution.
+void _qdid_core_cov(real colvector y1, real colvector y2, real colvector y3,
+                    real colvector D, real colvector ps, real colvector probs,
+                    real colvector qtt)
+{
+    real colvector idx1, idx0, y1t, y2t, y3t, y2c, y3c
+    real colvector u, L, dYtrt, v, dy_all, w_all, C, kcf
+    real scalar nt, n0, pD1
+    idx1 = selectindex(D :== 1)
+    idx0 = selectindex(D :== 0)
+    y1t = y1[idx1]; y2t = y2[idx1]; y3t = y3[idx1]
+    nt = rows(y1t); n0 = rows(idx0)
+    pD1 = nt / n0
+
+    // L = quantile of treated pre1 at rank of treated pre2
+    u = _qdid_ecdf(y1t, y1t)
+    L = _qdid_quantile(y2t, u)
+    // v = rank of treated pre-change
+    dYtrt = y2t - y1t
+    v = _qdid_ecdf(dYtrt, dYtrt)
+    // IPW-weighted untreated post-change distribution
+    dy_all = y3 - y2
+    w_all = (1 :- D) :* ps :/ ((1 :- ps) :* pD1)
+    C = _qdid_wquantile(dy_all, w_all, v)
+    kcf = L + C
+    qtt = _qdid_quantile(y3t, probs) - _qdid_quantile(kcf, probs)
+}
+
+void _qdid_run_cov(string scalar yvars, string scalar treatname, string scalar probsname)
+{
+    real matrix Yw, probsm, out
+    real colvector D, y1, y2, y3, ps, probs, qtt
+    real scalar m, i
+    Yw = st_data(., yvars)
+    D = st_data(., treatname)
+    ps = st_data(., "_pscore")
+    probs = st_matrix(probsname)'
+    y1 = Yw[.,1]; y2 = Yw[.,2]; y3 = Yw[.,3]
+    _qdid_core_cov(y1, y2, y3, D, ps, probs, qtt)
+    m = rows(probs)
+    out = J(m, 2, .)
+    for (i = 1; i <= m; i++) {
+        out[i,1] = probs[i]
+        out[i,2] = qtt[i]
+    }
+    st_matrix("qttmat", out)
+}
 end

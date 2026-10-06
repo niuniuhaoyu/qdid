@@ -9,7 +9,8 @@ program define qdid, rclass
         unit(varname numeric) ///            individual id
         time(varname numeric) ///            time (three periods: tmin2, tmin1, post)
         treat(varname numeric) ///           binary group indicator (1 = treated)
-        [probs(numlist) ///                  quantile grid (default 0.05(0.05)0.95)
+        [covariates(varlist) ///             covariates (conditional, via propensity score)
+         probs(numlist) ///                  quantile grid (default 0.05(0.05)0.95)
          iters(integer 100) ///              bootstrap replications (0 = none)
          level(real 95) ///                  confidence level (%)
          seed(integer 12345) ///             RNG seed
@@ -52,6 +53,12 @@ program define qdid, rclass
         matrix _probs[1,`ip'] = `p'
     }
 
+    if "`covariates'" != "" {
+        local tmin2 : word 1 of `tvals'
+        qui logit `treat' `covariates' if `time' == `tmin2'
+        qui predict double _pscore
+    }
+
     qui reshape wide `depvar', i(`unit') j(`time')
     local yvars ""
     foreach tv of local tvals {
@@ -66,7 +73,12 @@ program define qdid, rclass
     }
 
     * ---------- point estimate ----------
-    mata: _qdid_run("`yvars'", "`treat'", "_probs")
+    if "`covariates'" == "" {
+        mata: _qdid_run("`yvars'", "`treat'", "_probs")
+    }
+    else {
+        mata: _qdid_run_cov("`yvars'", "`treat'", "_probs")
+    }
     matrix _qtt = qttmat
 
     * ---------- bootstrap (resample units) ----------
@@ -83,7 +95,12 @@ program define qdid, rclass
         forvalues b = 1/`iters' {
             qui use `est', clear
             qui bsample
-            mata: _qdid_run("`yvars'", "`treat'", "_probs")
+            if "`covariates'" == "" {
+                mata: _qdid_run("`yvars'", "`treat'", "_probs")
+            }
+            else {
+                mata: _qdid_run_cov("`yvars'", "`treat'", "_probs")
+            }
             matrix _qb = qttmat
             forvalues k = 1/`np' {
                 matrix boot[`b',`k'] = _qb[`k',2]

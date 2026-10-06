@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (v0.3.0)
+- `covariates(varlist)` option: conditional QTT via propensity-score reweighting
+  of the untreated change distribution (Callaway & Li 2019; matches R
+  `qte::panel.qtet(method="pscore", xformla=~x)`, max |diff| ≈ 0.01).
+
 ### Added (v0.2.0)
 - Bootstrap standard errors and percentile confidence intervals (`iters()`,
   `level()`), resampling units.
