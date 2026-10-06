@@ -1,0 +1,1 @@
+d 'qdid' 'Quantile treatment effects in difference-in-differences'

@@ -1,0 +1,14 @@
+d 'qdid': module for quantile treatment effects in difference-in-differences
+d
+d Implements Callaway & Li (2019, Quantitative Economics 10(4): 1579-1618):
+d quantile treatment effects on the treated (QTT) in two-period DiD, with
+d cluster-bootstrap pointwise intervals and a multiplier-bootstrap uniform
+d confidence band across quantiles. Optional covariates for conditional
+d distributional parallel trends (Callaway-Li, Proposition 1).
+d
+d Author: Haoyu Niu
+d Distribution-Date: 20261006
+d Requires: Stata version 16
+d
+f qdid.ado
+f qdid.sthlp
