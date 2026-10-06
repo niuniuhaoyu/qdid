@@ -12,9 +12,10 @@ All notable changes to this project will be documented in this file.
   the cell QTT curves are averaged. Exact R parity for the staggered aggregation
   is future work.
 - KNOWN ISSUE (staggered): the aggregation now follows R's method (combining the
-  cell F0/F1 distributions), but the result is systematically ~0.13 higher than
-  R `qte::panel_qtt(gt_type="qtt")` on the same small DGP; exact parity is an open
-  item (see `examples/_test_stag_r.do`).
+  cell F0/F1 distributions). The **single-cohort cell matches R to ~0.01**
+  (`examples/_test_stag_c3.do`), so per-cell computation is correct; the
+  **multi-cohort overall is systematically ~0.13 higher than R** `panel_qtt`
+  (`examples/_test_stag_r.do`) — the aggregation step is the open item.
 
 ### Added (v0.3.0)
 - `covariates(varlist)` option: conditional QTT via propensity-score reweighting
