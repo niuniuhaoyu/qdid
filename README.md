@@ -31,6 +31,9 @@ qdid y, unit(id) time(t) treat(d) probs(0.1(0.1)0.9) iters(200) cband graph
 
 * conditional QTT with covariates (via propensity-score reweighting)
 qdid y, unit(id) time(t) treat(d) covariates(x1 x2) probs(0.1(0.1)0.9)
+
+* staggered adoption (g = first treatment period, 0 = never treated)
+qdid y, unit(id) time(t) gvar(g) probs(0.1(0.1)0.9)
 ```
 
 Requires **three periods** (`tmin2`, `tmin1`, `post`); `treat` is the group

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (v0.4.0)
+- `gvar(varname)` option: staggered adoption (multiple treatment cohorts). Uses
+  the two-pre-period copula-stability cell for each (g, t) with not-yet-treated
+  controls, aggregated by cohort size. **Aggregation is an approximation of R
+  `qte::panel_qtt_long_agg`** (which aggregates the F0/F1 distributions); here
+  the cell QTT curves are averaged. Exact R parity for the staggered aggregation
+  is future work.
+
 ### Added (v0.3.0)
 - `covariates(varlist)` option: conditional QTT via propensity-score reweighting
   of the untreated change distribution (Callaway & Li 2019; matches R

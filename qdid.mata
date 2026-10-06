@@ -151,4 +151,61 @@ void _qdid_run_cov(string scalar yvars, string scalar treatname, string scalar p
     }
     st_matrix("qttmat", out)
 }
+
+// staggered adoption: group-time QTT cells (copula stability) + cohort-size-weighted aggregation.
+// NOTE: this aggregation is an approximation of R qte::panel_qtt_long_agg (which aggregates
+// the counterfactual distributions F0/F1); here we average the cell QTT curves.
+void _qdid_stag_run(string scalar yvars, string scalar gvname, string scalar tvalsname,
+                    string scalar probsname)
+{
+    real matrix Y, out
+    real colvector g, tvals, probs, cohorts, subidx, D, qtt_agg, qtt_cell, idx1, idx0
+    real colvector y1, y2, y3, y1t, y2t, y3t, y2c, y3c
+    real scalar n, T, np, c, ti, gg, pre1, pre2, wi, wsum
+    real colvector ip2, ip1
+    Y = st_data(., yvars)
+    g = st_data(., gvname)
+    tvals = st_matrix(tvalsname)'
+    probs = st_matrix(probsname)'
+    n = rows(g); T = rows(tvals); np = rows(probs)
+    qtt_agg = J(np, 1, 0)
+    wsum = 0
+    cohorts = uniqrows(select(g, g :> 0))
+    for (c = 1; c <= rows(cohorts); c++) {
+        gg = cohorts[c]
+        for (ti = 1; ti <= T; ti++) {
+            if (tvals[ti] < gg) continue
+            pre1 = gg - 1
+            pre2 = 2 * gg - tvals[ti] - 2
+            ip2 = selectindex(tvals :== pre2)
+            ip1 = selectindex(tvals :== pre1)
+            if (rows(ip2) == 0 | rows(ip1) == 0) continue
+            subidx = selectindex((g :== gg) :| (g :> tvals[ti]) :| (g :== 0))
+            y1 = Y[subidx, ip2[1]]
+            y2 = Y[subidx, ip1[1]]
+            y3 = Y[subidx, ti]
+            D = (g[subidx] :== gg)
+            idx1 = selectindex(D :== 1)
+            idx0 = selectindex(D :== 0)
+            if (rows(idx1) == 0 | rows(idx0) == 0) continue
+            y1t = y1[idx1]; y2t = y2[idx1]; y3t = y3[idx1]
+            y2c = y2[idx0]; y3c = y3[idx0]
+            _qdid_core(y1t, y2t, y3t, y2c, y3c, probs, qtt_cell)
+            wi = sum(g :== gg)
+            qtt_agg = qtt_agg + wi * qtt_cell
+            wsum = wsum + wi
+        }
+    }
+    if (wsum == 0) {
+        errprintf("qdid: no valid staggered (g,t) cells (need >=2 pre-periods)\n")
+        _error(198)
+    }
+    qtt_agg = qtt_agg / wsum
+    out = J(np, 2, .)
+    for (c = 1; c <= np; c++) {
+        out[c,1] = probs[c]
+        out[c,2] = qtt_agg[c]
+    }
+    st_matrix("qttmat", out)
+}
 end

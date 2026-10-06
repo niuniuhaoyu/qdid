@@ -8,8 +8,9 @@ program define qdid, rclass
     syntax varlist(max=1 numeric) [if] [in], ///
         unit(varname numeric) ///            individual id
         time(varname numeric) ///            time (three periods: tmin2, tmin1, post)
-        treat(varname numeric) ///           binary group indicator (1 = treated)
-        [covariates(varlist) ///             covariates (conditional, via propensity score)
+        [treat(varname numeric) ///          binary group indicator (1 = treated)
+         gvar(varname numeric) ///           first treatment period (0=never); enables staggered
+         covariates(varlist) ///             covariates (conditional, via propensity score)
          probs(numlist) ///                  quantile grid (default 0.05(0.05)0.95)
          iters(integer 100) ///              bootstrap replications (0 = none)
          level(real 95) ///                  confidence level (%)
@@ -25,19 +26,36 @@ program define qdid, rclass
     * ---------- validation ----------
     qui levelsof `time', local(tvals)
     local T : word count `tvals'
-    if `T' != 3 {
-        di as error "qdid: requires exactly three periods (tmin2, tmin1, post); found `T'"
-        exit 198
+    if "`gvar'" == "" {
+        if "`treat'" == "" {
+            di as error "qdid: treat() is required for the two-period design"
+            exit 198
+        }
+        if `T' != 3 {
+            di as error "qdid: requires exactly three periods (tmin2, tmin1, post); found `T'"
+            exit 198
+        }
+        qui count if `treat' != 0 & `treat' != 1
+        if r(N) > 0 {
+            di as error "qdid: treat() must be binary (0/1)"
+            exit 198
+        }
+        qui levelsof `treat', local(dvals)
+        if `: word count `dvals'' != 2 {
+            di as error "qdid: treat() must take both 0 and 1"
+            exit 198
+        }
     }
-    qui count if `treat' != 0 & `treat' != 1
-    if r(N) > 0 {
-        di as error "qdid: treat() must be binary (0/1)"
-        exit 198
-    }
-    qui levelsof `treat', local(dvals)
-    if `: word count `dvals'' != 2 {
-        di as error "qdid: treat() must take both 0 and 1"
-        exit 198
+    else {
+        if "`covariates'" != "" {
+            di as error "qdid: covariates() with gvar() (staggered) is not supported"
+            exit 198
+        }
+        qui count if `gvar' < 0
+        if r(N) > 0 {
+            di as error "qdid: gvar() must be >= 0 (0 = never treated)"
+            exit 198
+        }
     }
 
     if "`probs'" == "" local probs "0.05(0.05)0.95"
@@ -51,6 +69,36 @@ program define qdid, rclass
     foreach p of local probs_list {
         local ip = `ip' + 1
         matrix _probs[1,`ip'] = `p'
+    }
+
+    * ---------- staggered adoption path ----------
+    if "`gvar'" != "" {
+        local Tn : word count `tvals'
+        matrix _tvals = J(1, `Tn', .)
+        local it = 0
+        foreach tv of numlist `tvals' {
+            local it = `it' + 1
+            matrix _tvals[1,`it'] = `tv'
+        }
+        qui reshape wide `depvar', i(`unit') j(`time')
+        local yvars ""
+        foreach tv of local tvals {
+            local yvars "`yvars' `depvar'`tv'"
+        }
+        capture mata: _qdid_ecdf(J(2,1,0), J(1,1,0))
+        if _rc {
+            findfile "qdid.mata"
+            qui do "`r(fn)'"
+        }
+        mata: _qdid_stag_run("`yvars'", "`gvar'", "_tvals", "_probs")
+        matrix _qtt = qttmat
+        matrix colnames _qtt = prob QTT
+        di as text _n "Quantile treatment effect on the treated (QTT), staggered"
+        di as text    "cells aggregated weighted by cohort size (approximation of R panel_qtt)"
+        matlist _qtt, border(rows) format(%9.4f)
+        return matrix qtt = _qtt
+        restore
+        exit
     }
 
     if "`covariates'" != "" {
