@@ -45,3 +45,32 @@ differences models with panel data. *Quantitative Economics* 10(4): 1579–1618.
 - Callaway & Li (2019), QE 10(4):1579–1618（Copula Stability）。
 - R `qte` 包（`bcallaway11/qte`）：Panel QTT via copula stability。
 - 相关：arXiv:2408.01208（分布型 DiD 多期版本，用 copula invariance）。
+
+## 6. R `qte` 的参考算法（已抠源码，作为移植基准）
+
+来源：`qte::panel_qtt` → `ptetools::pte(..., attgt_fun = panel_qtt_gt, required_pre_periods = 2L)`。
+
+**重要**：R 实现用**三段子样本**（`pre2, pre1, post`），即需要**两个处理前时期**。两期设计（仅 1 个 pre）不能直接套用 → qdid 设定需相应调整为「2 pre + 1 post」或通用面板。
+
+`panel_qtt_gt`（组-时 QTT，无协变量分支）核心：
+
+```
+dY_trt   = Y_pre1_trt - Y_pre2_trt          # 处理组处理前差分（学 copula 用）
+dY_ctrl  = Y_post_ctrl - Y_pre1_ctrl        # 控制组差分（未处理变化分布）
+u        = F_{Y_pre2|D=1}(Y_pre2_trt)        # pre2 水平的秩
+L        = Q_{Y_pre1|D=1}(u)                 # 按同秩映射到 pre1 水平
+v        = F_{dY_trt|D=1}(dY_trt)            # 处理前差分的秩
+C        = Q_{dY_ctrl}(v)                    # 按同秩映射到控制组差分
+kcf      = L + C                             # 处理组未处理反事实 Y_post(0)
+ATT      = mean(Y_post_trt) - mean(kcf)
+F0       = ECDF(kcf); F1 = ECDF(Y_post_trt); Fte = ECDF(Y_post_trt - kcf)
+QTT(τ)   = Q_{F1}(τ) - Q_{F0}(τ)
+```
+
+- `wquant(y,w,probs)`：加权分位数（按 `cumsum(w)>=p` 取）。
+- 秩 `u,v` 用加权 ECDF 计算。
+- 有协变量时（`xformula` 非空）：用 `quantreg::rq` 在 `u_seq=seq(0.01,0.99,0.01)` 上做分位回归，取 `Fhat/Qhat` 构造 `u, L, v, C`（见源码第 57–90 行）。
+- 默认 `pre_copula="long"`，聚合用 `panel_qtt_long_agg`；`cband` 用 empirical bootstrap（`biters`）。
+
+> 移植到 Stata 时：需实现加权 ECDF、加权分位数、秩映射；协变量分支需分位回归。**先用无协变量、无 bootstrap 的核心对拍 R `qte`，再加噪。**
+
