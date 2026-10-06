@@ -1,5 +1,5 @@
 *! qdid: Quantile Treatment Effects in Difference-in-Differences
-*! version 0.1.0  2026-10-06  Haoyu Niu
+*! version 0.2.0  2026-10-06  Haoyu Niu
 *! Two-pre-period panel QTT via copula stability (Callaway & Li 2019).
 
 program define qdid, rclass
@@ -10,7 +10,10 @@ program define qdid, rclass
         time(varname numeric) ///            time (three periods: tmin2, tmin1, post)
         treat(varname numeric) ///           binary group indicator (1 = treated)
         [probs(numlist) ///                  quantile grid (default 0.05(0.05)0.95)
+         iters(integer 100) ///              bootstrap replications (0 = none)
+         level(real 95) ///                  confidence level (%)
          seed(integer 12345) ///             RNG seed
+         cband ///                            uniform confidence band (sup-t)
          GRaph]                              // QTT plot
 
     local depvar `varlist'
@@ -62,31 +65,104 @@ program define qdid, rclass
         qui do "`r(fn)'"
     }
 
-    * ---------- estimate ----------
+    * ---------- point estimate ----------
     mata: _qdid_run("`yvars'", "`treat'", "_probs")
-
     matrix _qtt = qttmat
-    matrix colnames _qtt = prob QTT
-    matrix drop qttmat
+
+    * ---------- bootstrap (resample units) ----------
+    matrix _full = J(`np', 5, .)
+    forvalues k = 1/`np' {
+        matrix _full[`k',1] = _qtt[`k',1]
+        matrix _full[`k',2] = _qtt[`k',2]
+    }
+    if `iters' > 0 {
+        tempfile est
+        qui save `est'
+        matrix boot = J(`iters', `np', .)
+        set seed `seed'
+        forvalues b = 1/`iters' {
+            qui use `est', clear
+            qui bsample
+            mata: _qdid_run("`yvars'", "`treat'", "_probs")
+            matrix _qb = qttmat
+            forvalues k = 1/`np' {
+                matrix boot[`b',`k'] = _qb[`k',2]
+            }
+        }
+        qui use `est', clear
+        local plo = (100 - `level') / 2
+        local phi = 100 - `plo'
+        svmat boot, names(bb_)
+        forvalues k = 1/`np' {
+            qui summarize bb_`k'
+            matrix _full[`k',3] = r(sd)
+            qui centile bb_`k', centile(`plo' `phi')
+            matrix _full[`k',4] = r(c_1)
+            matrix _full[`k',5] = r(c_2)
+        }
+    }
+
+    matrix colnames _full = prob QTT se lb ub
+
+    * ---------- uniform confidence band (sup-t) ----------
+    if "`cband'" != "" {
+        if `iters' == 0 {
+            di as error "qdid: cband requires iters() > 0"
+            exit 198
+        }
+        matrix _sup = J(`iters', 1, .)
+        forvalues b = 1/`iters' {
+            local mx = 0
+            forvalues k = 1/`np' {
+                local t = (boot[`b',`k'] - _full[`k',2]) / _full[`k',3]
+                if abs(`t') > `mx' local mx = abs(`t')
+            }
+            matrix _sup[`b',1] = `mx'
+        }
+        svmat _sup, names(sup_)
+        qui centile sup_1, centile(`level')
+        local crit = r(c_1)
+        matrix _cb = J(`np', 4, .)
+        forvalues k = 1/`np' {
+            matrix _cb[`k',1] = _full[`k',1]
+            matrix _cb[`k',2] = _full[`k',2]
+            matrix _cb[`k',3] = _full[`k',2] - `crit' * _full[`k',3]
+            matrix _cb[`k',4] = _full[`k',2] + `crit' * _full[`k',3]
+        }
+        matrix colnames _cb = prob QTT cb_lb cb_ub
+        di as text _n "Uniform confidence band (sup-t): crit = " %6.4f `crit'
+        matlist _cb, border(rows) format(%9.4f)
+        return matrix cb = _cb
+        return scalar crit = `crit'
+    }
 
     di as text _n "Quantile treatment effect on the treated (QTT)"
     di as text    "Callaway & Li (2019), copula stability; three periods"
-    matlist _qtt, border(rows) format(%9.4f)
+    if `iters' > 0 {
+        di as text "bootstrap: `iters' reps, `level'% percentile CI"
+    }
+    matlist _full, border(rows) format(%9.4f)
 
+    * ---------- graph ----------
     if "`graph'" != "" {
         qui clear
-        qui set obs `: rowsof(_qtt)'
+        qui set obs `np'
         gen double prob = .
         gen double qtt  = .
-        forvalues k = 1/`: rowsof(_qtt)' {
-            qui replace prob = _qtt[`k',1] in `k'
-            qui replace qtt  = _qtt[`k',2] in `k'
+        gen double lb   = .
+        gen double ub   = .
+        forvalues k = 1/`np' {
+            qui replace prob = _full[`k',1] in `k'
+            qui replace qtt  = _full[`k',2] in `k'
+            qui replace lb   = _full[`k',4] in `k'
+            qui replace ub   = _full[`k',5] in `k'
         }
-        twoway (connected qtt prob, lcolor(navy) mcolor(navy)), ///
+        twoway (rarea lb ub prob, color(gs13)) ///
+               (connected qtt prob, lcolor(navy) mcolor(navy)), ///
             title("Quantile treatment effect on the treated") ///
             xtitle("Quantile") ytitle("QTT") yline(0, lpattern(dash))
     }
 
-    return matrix qtt = _qtt
+    return matrix qtt = _full
     restore
 end

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (v0.2.0)
+- Bootstrap standard errors and percentile confidence intervals (`iters()`,
+  `level()`), resampling units.
+- Uniform confidence band (`cband`, sup-t over quantiles) via the bootstrap draws.
+
 ### Added (v0.1.0)
 - `qdid` command: two-pre-period panel QTT via **copula stability** (Callaway &
   Li 2019). Counterfactual post outcome `kcf = L + C`; `QTT(τ) = Q_{Y_post|D=1}(τ)

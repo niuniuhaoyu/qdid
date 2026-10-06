@@ -8,7 +8,7 @@
 {pstd}
 {cmd:qdid} {it:depvar} {ifin}, {cmd:unit(}{it:varname}{cmd:)} {cmd:time(}{it:varname}{cmd:)}
         {cmd:treat(}{it:varname}{cmd:)} {cmd:probs(}{it:numlist}{cmd:)}
-        {cmd:seed(#)} {cmd:graph}
+        {cmd:iters(#)} {cmd:level(#)} {cmd:seed(#)} {cmd:cband} {cmd:graph}
 
 {title:Description}
 

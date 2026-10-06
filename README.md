@@ -27,7 +27,7 @@ net install qdid, from("https://raw.githubusercontent.com/niuniuhaoyu/qdid/main/
 ## Syntax
 
 ```stata
-qdid y, unit(id) time(t) treat(d) probs(0.1(0.1)0.9) graph
+qdid y, unit(id) time(t) treat(d) probs(0.1(0.1)0.9) iters(200) cband graph
 ```
 
 Requires **three periods** (`tmin2`, `tmin1`, `post`); `treat` is the group
