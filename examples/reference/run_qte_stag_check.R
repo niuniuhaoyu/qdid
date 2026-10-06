@@ -1,12 +1,10 @@
-# R qte panel_qtt reference (staggered) for qdid
+# R qte panel_qtt (staggered, QTT) reference on the small DGP
 suppressMessages({library(qte); library(haven)})
-df <- as.data.frame(haven::read_dta("D:/OpenCode/qdid/data/qdid_stag_sim.dta"))
-cat("rows:", nrow(df), " ids:", length(unique(df$id)), " cohorts:", paste(sort(unique(df$g)), collapse=","), "\n")
-res <- tryCatch(
-  panel_qtt(yname = "y", gname = "g", tname = "t", idname = "id", data = df,
-            probs = seq(0.1, 0.9, 0.1), cband = FALSE, biters = 50),
-  error = function(e) { cat("ERR:", conditionMessage(e), "\n"); NULL })
-if (!is.null(res)) {
-  cat("--- R panel_qtt overall_results$qtt ---\n")
-  print(round(res$overall_results$qtt, 6))
-}
+df <- as.data.frame(haven::read_dta("D:/OpenCode/qdid/data/qdid_stag_small.dta"))
+res <- panel_qtt(yname = "y", gname = "g", tname = "t", idname = "id", data = df,
+                 probs = seq(0.1, 0.9, 0.1), gt_type = "qtt", pre_copula = "long",
+                 cband = FALSE, biters = 10)
+cat("=== R panel_qtt overall QTT ===\n")
+print(res$overall_results)
+cat("\n=== per-cell QTT (group, time.period, qtt by prob) ===\n")
+print(res$attgt_results)

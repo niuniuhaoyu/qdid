@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   `qte::panel_qtt_long_agg`** (which aggregates the F0/F1 distributions); here
   the cell QTT curves are averaged. Exact R parity for the staggered aggregation
   is future work.
+- KNOWN ISSUE (staggered): the aggregation now follows R's method (combining the
+  cell F0/F1 distributions), but the result is systematically ~0.13 higher than
+  R `qte::panel_qtt(gt_type="qtt")` on the same small DGP; exact parity is an open
+  item (see `examples/_test_stag_r.do`).
 
 ### Added (v0.3.0)
 - `covariates(varlist)` option: conditional QTT via propensity-score reweighting
