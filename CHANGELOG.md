@@ -7,15 +7,15 @@ All notable changes to this project will be documented in this file.
 ### Added (v0.4.0)
 - `gvar(varname)` option: staggered adoption (multiple treatment cohorts). Uses
   the two-pre-period copula-stability cell for each (g, t) with not-yet-treated
-  controls, aggregated by cohort size. **Aggregation is an approximation of R
-  `qte::panel_qtt_long_agg`** (which aggregates the F0/F1 distributions); here
-  the cell QTT curves are averaged. Exact R parity for the staggered aggregation
-  is future work.
-- KNOWN ISSUE (staggered): the aggregation now follows R's method (combining the
-  cell F0/F1 distributions). The **single-cohort cell matches R to ~0.01**
-  (`examples/_test_stag_c3.do`), so per-cell computation is correct; the
-  **multi-cohort overall is systematically ~0.13 higher than R** `panel_qtt`
-  (`examples/_test_stag_r.do`) — the aggregation step is the open item.
+  controls, aggregating the cell counterfactual distributions F0/F1 exactly as R
+  `qte::panel_qtt_long_agg` (cohort-size weights).
+- RESOLVED: an earlier apparent ~0.13 gap vs R `panel_qtt` turned out to be a
+  **bug in R** — `qte:::three_period_subset` calls
+  `subset(data, G == g | G > tp | G == 0)`; when the data has a column literally
+  named `g`, `subset` resolves `g` to that column, so the not-yet-treated control
+  filter silently breaks (all units become controls). Renaming the column (e.g.
+  `gt`) makes R match Stata to ~0.03 (`examples/_test_stag_r.do`). See
+  `docs/research-notes-r-bug-gsubset.md`.
 
 ### Added (v0.3.0)
 - `covariates(varlist)` option: conditional QTT via propensity-score reweighting

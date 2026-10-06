@@ -1,4 +1,5 @@
-*! _test_stag_r.do - qdid staggered vs R qte::panel_qtt(gt_type="qtt") golden
+*! _test_stag_r.do - qdid staggered vs R qte::panel_qtt (gname renamed to 'gt'
+*! to avoid the R g-column-collision bug; see docs/research-notes-r-bug-gsubset.md)
 version 16
 clear all
 set more off
@@ -8,8 +9,9 @@ use "data/qdid_stag_small.dta", clear
 qdid y, unit(id) time(t) gvar(g) probs(0.1(0.1)0.9) iters(0)
 matrix q = r(qtt)
 
-local ref "0.2116 0.3830 0.4041 0.4335 0.4873 0.5264 0.5662 0.5300 0.5471"
-di as text _n "  tau     R_qtt    qdid     |diff|"
+* R golden with gname='gt' (bug avoided)
+local ref "0.3123 0.4978 0.4985 0.5651 0.5992 0.6262 0.6819 0.6438 0.6294"
+di as text _n "  tau     R(gt)    qdid     |diff|"
 local k = 0
 local maxerr = 0
 foreach r of local ref {
@@ -19,9 +21,6 @@ foreach r of local ref {
     if `e' > `maxerr' local maxerr = `e'
     di as text %6.2f q[`k',1] "  " %8.4f `r' "  " %8.4f `est' "  " %8.4f `e'
 }
-di as result _n "max|Stata - R panel_qtt| = " %8.5f `maxerr'
-* KNOWN DISCREPANCY: staggered aggregation matches R's *method* (F0/F1 combine) but
-* is systematically ~0.13 higher than R panel_qtt; exact parity is an open item.
-assert `maxerr' < 0.20
-assert q[5,2] > 0
-di as result "QDID STAGGERED RUNS (approx R; see CHANGELOG)"
+di as result _n "max|Stata - R(gt)| = " %8.5f `maxerr'
+assert `maxerr' < 0.05
+di as result "QDID STAGGERED vs R TEST PASS"
