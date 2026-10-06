@@ -2,9 +2,11 @@
 
 **Quantile treatment effects in difference-in-differences, for Stata**
 
-> Status: **skeleton** (v0.0.1) — estimator not implemented yet.
+> Status: **v0.1.0** — core two-pre-period QTT (copula stability) implemented and
+> matched to R `qte::panel.qtet` (max |diff| ≈ 0.01); bootstrap/CIs pending.
 > Design: [`docs/specs/2026-10-06-qdid-design.md`](docs/specs/2026-10-06-qdid-design.md)
 > Plan: [`docs/plans/2026-10-06-qdid-plan.md`](docs/plans/2026-10-06-qdid-plan.md)
+> Notes: [`docs/research-notes.md`](docs/research-notes.md)
 
 `qdid` implements the **quantile treatment effect on the treated (QTT)** of
 Callaway & Li (2019), *Quantile treatment effects in difference in differences
@@ -22,11 +24,15 @@ net install qdid, from("https://raw.githubusercontent.com/niuniuhaoyu/qdid/main/
 
 (Repository not published yet — for now, add the local folder to `adopath`.)
 
-## Planned syntax
+## Syntax
 
 ```stata
-qdid y, unit(id) time(t) treat(d) quantiles(0.1(0.1)0.9) cband graph
+qdid y, unit(id) time(t) treat(d) probs(0.1(0.1)0.9) graph
 ```
+
+Requires **three periods** (`tmin2`, `tmin1`, `post`); `treat` is the group
+indicator (1 = treated). Implemented estimator: counterfactual post outcome
+`kcf = L + C` via copula stability, then `QTT(τ) = Q_{Y_post|D=1}(τ) − Q_{kcf}(τ)`.
 
 ## Plan
 

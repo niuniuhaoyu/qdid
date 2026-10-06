@@ -12,3 +12,4 @@ d Requires: Stata version 16
 d
 f qdid.ado
 f qdid.sthlp
+f qdid.mata

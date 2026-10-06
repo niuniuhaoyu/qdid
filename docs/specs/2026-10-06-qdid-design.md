@@ -5,6 +5,10 @@
 > 作者：Haoyu Niu
 > 定位：Quantile Treatment Effect on the Treated (QTT) in Difference-in-Differences，Stata 实现
 > 方法依据：Callaway & Li (2019), *Quantile treatment effects in difference in differences models with panel data*, Quantitative Economics 10(4): 1579–1618
+>
+> **更新（2026-10-06）**：实现表明该估计量需要**两个处理前时期**（`tmin2, tmin1, post`），
+> 不是最初设想的两期。已按 R `qte::compute.panel.qtet`（copula stability）实现核心，
+> 并与 R `qte` 对拍（max|差|≈0.01）。见 `docs/research-notes.md`。
 
 ---
 
