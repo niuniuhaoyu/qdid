@@ -92,11 +92,42 @@ program define qdid, rclass
         }
         mata: _qdid_stag_run("`yvars'", "`gvar'", "_tvals", "_probs")
         matrix _qtt = qttmat
-        matrix colnames _qtt = prob QTT
+        matrix _full = J(`np', 5, .)
+        forvalues k = 1/`np' {
+            matrix _full[`k',1] = _qtt[`k',1]
+            matrix _full[`k',2] = _qtt[`k',2]
+        }
+        if `iters' > 0 {
+            tempfile est
+            qui save `est'
+            matrix boot = J(`iters', `np', .)
+            set seed `seed'
+            forvalues b = 1/`iters' {
+                qui use `est', clear
+                qui bsample
+                mata: _qdid_stag_run("`yvars'", "`gvar'", "_tvals", "_probs")
+                matrix _qb = qttmat
+                forvalues k = 1/`np' {
+                    matrix boot[`b',`k'] = _qb[`k',2]
+                }
+            }
+            qui use `est', clear
+            local plo = (100 - `level') / 2
+            local phi = 100 - `plo'
+            svmat boot, names(bb_)
+            forvalues k = 1/`np' {
+                qui summarize bb_`k'
+                matrix _full[`k',3] = r(sd)
+                qui centile bb_`k', centile(`plo' `phi')
+                matrix _full[`k',4] = r(c_1)
+                matrix _full[`k',5] = r(c_2)
+            }
+        }
+        matrix colnames _full = prob QTT se lb ub
         di as text _n "Quantile treatment effect on the treated (QTT), staggered"
-        di as text    "cells aggregated weighted by cohort size (approximation of R panel_qtt)"
-        matlist _qtt, border(rows) format(%9.4f)
-        return matrix qtt = _qtt
+        if `iters' > 0 di as text "bootstrap: `iters' reps, `level'% percentile CI"
+        matlist _full, border(rows) format(%9.4f)
+        return matrix qtt = _full
         restore
         exit
     }

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (v0.4.2)
+- Staggered adoption now reports bootstrap standard errors and percentile
+  confidence intervals (`iters()`, `level()`), resampling units.
+
 ### Added (v0.4.0)
 - `gvar(varname)` option: staggered adoption (multiple treatment cohorts). Uses
   the two-pre-period copula-stability cell for each (g, t) with not-yet-treated
