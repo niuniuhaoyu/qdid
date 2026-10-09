@@ -87,3 +87,7 @@ qdid y, unit(id) time(t) gvar(g) probs(0.1(0.1)0.9)
 ## 许可
 
 AGPL-3.0
+
+---
+
+[English](README.md) | [简体中文](README_zh.md)

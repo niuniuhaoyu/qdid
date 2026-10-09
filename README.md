@@ -91,3 +91,7 @@ Method:
 ## License
 
 AGPL-3.0
+
+---
+
+[English](README.md) | [简体中文](README_zh.md)
