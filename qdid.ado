@@ -1,6 +1,7 @@
 *! qdid: Quantile Treatment Effects in Difference-in-Differences
-*! version 0.2.0  2026-10-06  Haoyu Niu
-*! Two-pre-period panel QTT via copula stability (Callaway & Li 2019).
+*! version 0.4.2  2026-10-07  Haoyu Niu
+*! Two-pre-period panel QTT via copula stability (Callaway & Li 2019);
+*! bootstrap CI, uniform band (cband), conditional QTT (covariates), staggered (gvar).
 
 program define qdid, rclass
     version 16

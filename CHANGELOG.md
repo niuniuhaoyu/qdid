@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.4.2] — 2026-10-07
 
 ### Added (v0.4.2)
 - Staggered adoption now reports bootstrap standard errors and percentile

@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 0.0.1  2026-10-06  Haoyu Niu}
+{* *! version 0.4.2  2026-10-07  Haoyu Niu}
 
 {title:qdid --- Quantile treatment effects in difference-in-differences}
 
@@ -27,9 +27,10 @@ rank in the treated pre-period change to the untreated post-period change
 distribution. Then {cmd:QTT(tau) = Q_{Y_post|D=1}(tau) - Q_{kcf}(tau)}.
 
 {pstd}
-Version 0.1.0 implements this core estimator; bootstrap standard errors,
-confidence bands, covariates, and staggered adoption are planned. See
-{browse "docs/research-notes.md":docs/research-notes.md}.
+Version 0.4.2 implements the core QTT estimator; bootstrap standard errors and
+percentile confidence intervals; a uniform confidence band ({cmd:cband}, sup-t
+over quantiles); conditional QTT via {cmd:covariates()}; and staggered adoption
+via {cmd:gvar()}. See {browse "docs/research-notes.md":docs/research-notes.md}.
 
 {title:Options}
 
