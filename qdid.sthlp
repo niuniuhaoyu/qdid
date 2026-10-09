@@ -1,6 +1,8 @@
 {smcl}
 {* *! version 0.4.2  2026-10-07  Haoyu Niu}
 
+{p 4 4 2}{it:Chinese help / 中文帮助:} {help qdid_zh}
+
 {title:qdid --- Quantile treatment effects in difference-in-differences}
 
 {title:Syntax}
